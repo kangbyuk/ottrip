@@ -130,8 +130,8 @@ export default function Page() {
       <Image
   src="/logo.png"
   alt="OTTRIP logo"
-  width={160}
-  height={48}
+  width={120}
+  height={40}
   className="h-10 w-auto"
 />
         <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
