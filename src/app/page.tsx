@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
@@ -17,7 +17,7 @@ export default function Page() {
   const [userId, setUserId] = useState('');
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
-  const sixAMRef = useRef<HTMLDivElement>(null);
+  const scrollTargetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -51,11 +51,12 @@ export default function Page() {
   }, [userId, selectedDate]);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      if (sixAMRef.current) {
-        sixAMRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    const timer = setTimeout(() => {
+      if (scrollTargetRef.current) {
+        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    });
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
@@ -136,13 +137,13 @@ export default function Page() {
             <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
             {weekDays.map((day) => {
               const cellSchedules = findSchedulesForCell(day, hour);
-              const isSixAM = hour === 6 && day.getDay() === 0;
+              const isScrollTarget = day.getDay() === 0 && hour === 6;
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
-                  ref={isSixAM ? sixAMRef : null}
                   className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
                   onClick={() => handleCellClick(day, hour)}
+                  ref={isScrollTarget ? scrollTargetRef : undefined}
                 >
                   {cellSchedules.map((sch) => (
                     <div
