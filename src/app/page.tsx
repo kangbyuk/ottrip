@@ -51,7 +51,7 @@ export default function Page() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollTargetRef.current) {
-        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -120,16 +120,16 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* 로고 */}
-      <div className="mb-2">
-        <img src="/logo.png" alt="OTTRIP Logo" className="h-8" />
+      {/* 로고 영역 */}
+      <div className="mb-4">
+        <img src="/logo.png" alt="OTTRIP Logo" className="h-10" />
       </div>
 
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      {/* 스케줄표 */}
-      <div className="overflow-auto max-h-[75vh] mt-4 border">
+      <div className="overflow-y-auto max-h-[70vh] mt-4 border rounded">
         <div className="grid grid-cols-8 gap-px">
+          {/* 요일/날짜 고정 헤더 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
             <div
@@ -140,6 +140,7 @@ export default function Page() {
             </div>
           ))}
 
+          {/* 시간별 셀 */}
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
               <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
