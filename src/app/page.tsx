@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
@@ -29,12 +29,14 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
+
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
+
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -48,16 +50,13 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
-  // 🎯 스크롤 위치 6시로 이동
-  useEffect(() => {
-    const scrollToTarget = () => {
+  useLayoutEffect(() => {
+    const timer = setTimeout(() => {
       if (scrollRef.current) {
-        scrollRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+        scrollRef.current.scrollIntoView({ block: 'start', behavior: 'auto' });
       }
-    };
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scrollToTarget);
-    });
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
@@ -93,6 +92,7 @@ export default function Page() {
 
   const findSchedulesForCell = (date: Date, hour: number) => {
     const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
     return schedules.filter((sch) => {
       const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
       const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
@@ -121,58 +121,54 @@ export default function Page() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 overflow-x-auto">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-y-auto max-h-[80vh] mt-4 border">
-        <div className="grid grid-cols-8 gap-px min-w-[800px]">
-          {/* 요일 / 날짜 헤더 */}
-          <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
-          {weekDays.map((day) => (
-            <div
-              key={day.toISOString()}
-              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
-            >
-              {format(day, 'MM/dd (E)', { locale: ko })}
-            </div>
-          ))}
+      <div className="grid grid-cols-8 gap-px border mt-4 max-h-[calc(100vh-160px)] overflow-y-auto">
+        <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
+        {weekDays.map((day) => (
+          <div
+            key={day.toISOString()}
+            className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+          >
+            {format(day, 'MM/dd (E)', { locale: ko })}
+          </div>
+        ))}
 
-          {/* 시간별 셀 */}
-          {Array.from({ length: 24 }).map((_, hour) => (
-            <React.Fragment key={`row-${hour}`}>
-              <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
-              {weekDays.map((day) => {
-                const cellSchedules = findSchedulesForCell(day, hour);
-                const isScrollTarget = day.getDay() === 0 && hour === 6;
-                return (
-                  <div
-                    key={`${day.toISOString()}-${hour}`}
-                    className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
-                    onClick={() => handleCellClick(day, hour)}
-                    ref={isScrollTarget ? scrollRef : undefined}
-                  >
-                    {cellSchedules.map((sch) => (
-                      <div
-                        key={sch.id}
-                        className="bg-blue-200 rounded p-1 text-xs truncate"
-                        style={{
-                          height: `${100 / cellSchedules.length}%`,
-                          marginBottom: '2px',
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleScheduleClick(sch);
-                        }}
-                      >
-                        {sch.title}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </div>
+        {Array.from({ length: 24 }).map((_, hour) => (
+          <React.Fragment key={`row-${hour}`}>
+            <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
+            {weekDays.map((day) => {
+              const cellSchedules = findSchedulesForCell(day, hour);
+              const isScrollTarget = day.getDay() === 0 && hour === 6;
+              return (
+                <div
+                  key={`${day.toISOString()}-${hour}`}
+                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
+                  onClick={() => handleCellClick(day, hour)}
+                  ref={isScrollTarget ? scrollRef : undefined}
+                >
+                  {cellSchedules.map((sch) => (
+                    <div
+                      key={sch.id}
+                      className="bg-blue-200 rounded p-1 text-xs truncate"
+                      style={{
+                        height: `${100 / cellSchedules.length}%`,
+                        marginBottom: '2px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScheduleClick(sch);
+                      }}
+                    >
+                      {sch.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </div>
 
       <ScheduleModal
