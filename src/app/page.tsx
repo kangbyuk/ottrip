@@ -1,103 +1,167 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useEffect, useState } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { ScheduleData } from '@/types/schedule';
+import ScheduleModal from '@/components/ui/ScheduleModal';
+import WeekSelector from '@/components/WeekSelector';
+import { format, startOfWeek, addDays } from 'date-fns';
+import { ko } from 'date-fns/locale';
+
+export default function Page() {
+  const { isSignedIn, user } = useUser();
+  const [schedules, setSchedules] = useState<ScheduleData[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleData | null>(null);
+  const [userId, setUserId] = useState('');
+  const [defaultStart, setDefaultStart] = useState('');
+  const [defaultEnd, setDefaultEnd] = useState('');
+
+  useEffect(() => {
+    if (isSignedIn && user) {
+      setUserId(user.id);
+    }
+  }, [isSignedIn, user]);
+
+  const refreshSchedules = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`/api/schedules/list?user_id=${userId}`);
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const text = await res.text();
+        console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
+        throw new Error('API 응답이 JSON이 아닙니다.');
+      }
+
+      const data = await res.json();
+      setSchedules(data);
+    } catch (error) {
+      console.error('일정 불러오기 실패:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      refreshSchedules();
+    }
+  }, [userId, selectedDate]);
+
+  const handleCellClick = (day: Date, hour: number) => {
+    const selectedCell = new Date(day);
+    selectedCell.setHours(hour, 0, 0, 0);
+
+    const endCell = new Date(selectedCell);
+    endCell.setHours(selectedCell.getHours() + 1);
+
+    const toISOStringLocal = (date: Date) => {
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+    };
+
+    setDefaultStart(toISOStringLocal(selectedCell));
+    setDefaultEnd(toISOStringLocal(endCell));
+    setSelectedSchedule(null);
+    setIsModalOpen(true);
+  };
+
+  const handleScheduleClick = (schedule: ScheduleData) => {
+    const start = typeof schedule?.start_time === 'string'
+      ? schedule.start_time
+      : (new Date(schedule?.start_time)).toISOString() ?? '';
+    const end = typeof schedule?.end_time === 'string'
+      ? schedule.end_time
+      : (new Date(schedule?.end_time)).toISOString() ?? '';
+    setDefaultStart(start);
+    setDefaultEnd(end);
+    setSelectedSchedule(schedule);
+    setIsModalOpen(true);
+  };
+
+  const findSchedulesForCell = (date: Date, hour: number) => {
+    const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
+    return schedules.filter((sch) => {
+      const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
+      const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
+
+      const cellStart = new Date(date);
+      cellStart.setHours(hour, 0, 0, 0);
+      const cellEnd = new Date(cellStart);
+      cellEnd.setHours(cellStart.getHours() + 1);
+
+      const utcCellStart = toUtc(cellStart);
+      const utcCellEnd = toUtc(cellEnd);
+
+      return (
+        (start >= utcCellStart && start < utcCellEnd) ||
+        (end > utcCellStart && end <= utcCellEnd) ||
+        (start <= utcCellStart && end >= utcCellEnd)
+      );
+    });
+  };
+
+  const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i));
+
+  if (!isSignedIn) {
+    return <div className="p-4">로그인이 필요합니다.</div>;
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="p-4">
+      <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <div className="grid grid-cols-8 gap-px border mt-4">
+        <div className="bg-gray-100 p-2">시간</div>
+        {weekDays.map((day) => (
+          <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold">
+            {format(day, 'MM/dd (E)', { locale: ko })}
+          </div>
+        ))}
+
+        {Array.from({ length: 24 }).map((_, hour) => (
+          <React.Fragment key={`row-${hour}`}>
+            <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
+            {weekDays.map((day) => {
+              const cellSchedules = findSchedulesForCell(day, hour);
+              return (
+                <div
+                  key={`${day.toISOString()}-${hour}`}
+                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1"
+                  onClick={() => handleCellClick(day, hour)}
+                >
+                  {cellSchedules.map((sch) => (
+                    <div
+                      key={sch.id}
+                      className="bg-blue-200 rounded p-1 mb-1 text-xs truncate"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScheduleClick(sch);
+                      }}
+                    >
+                      {sch.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <ScheduleModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        refresh={refreshSchedules}
+        setSelectedDate={setSelectedDate}
+        schedule={selectedSchedule!}
+        userId={userId}
+        defaultStart={defaultStart}
+        defaultEnd={defaultEnd}
+      />
     </div>
   );
 }
