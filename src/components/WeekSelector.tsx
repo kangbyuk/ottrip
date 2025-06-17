@@ -38,7 +38,6 @@ export default function WeekSelector({ selectedDate, onSelect }: WeekSelectorPro
 
   return (
     <div className="relative flex justify-end items-center mb-4 gap-2 z-10">
-      {/* 시계 아이콘 - 이번 주로 이동 */}
       <button
         onClick={goToThisWeek}
         className="flex items-center justify-center p-2 border rounded bg-white shadow"
@@ -47,7 +46,6 @@ export default function WeekSelector({ selectedDate, onSelect }: WeekSelectorPro
         <History className="w-4 h-4 text-blue-500" />
       </button>
 
-      {/* 날짜 표시 버튼 */}
       <div className="relative">
         <button
           onClick={() => setShowPopover(!showPopover)}
@@ -57,7 +55,6 @@ export default function WeekSelector({ selectedDate, onSelect }: WeekSelectorPro
           {format(start, 'MM/dd')} ~ {format(end, 'MM/dd')}
         </button>
 
-        {/* 달력 팝업 */}
         {showPopover && (
           <div
             ref={popoverRef}
@@ -70,6 +67,7 @@ export default function WeekSelector({ selectedDate, onSelect }: WeekSelectorPro
               }}
               value={selectedDate}
               locale="ko-KR"
+              calendarType="gregory"
               tileClassName={({ date }) =>
                 isSameWeek(date, selectedDate, { weekStartsOn: 0 })
                   ? 'bg-blue-100 text-blue-800 font-bold rounded'
