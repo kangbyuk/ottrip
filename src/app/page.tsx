@@ -124,13 +124,13 @@ export default function Page() {
     <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="mt-4 h-[calc(100vh-180px)] overflow-y-auto border">
+      <div className="overflow-y-auto max-h-[70vh] border mt-4 rounded">
         <div className="grid grid-cols-8 gap-px">
-          <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
+          <div className="bg-gray-100 p-2">시간</div>
           {weekDays.map((day) => (
             <div
               key={day.toISOString()}
-              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10 bg-white"
             >
               {format(day, 'MM/dd (E)', { locale: ko })}
             </div>
