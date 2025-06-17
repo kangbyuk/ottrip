@@ -1,3 +1,5 @@
+// src/app/page.tsx
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -107,12 +109,7 @@ export default function Page() {
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i));
 
   if (!isSignedIn) {
-    return (
-      <div className="p-4">
-        <h1 className="text-xl font-bold mb-2">로그인이 필요합니다.</h1>
-        <a href="/sign-in" className="text-blue-600 underline">로그인 하러 가기</a>
-      </div>
-    );
+    return <div className="p-4">로그인이 필요합니다.</div>;
   }
 
   return (
@@ -132,24 +129,29 @@ export default function Page() {
             <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
             {weekDays.map((day) => {
               const cellSchedules = findSchedulesForCell(day, hour);
+              const isSingle = cellSchedules.length === 1;
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
                   className="h-16 border cursor-pointer hover:bg-gray-100 p-1"
                   onClick={() => handleCellClick(day, hour)}
                 >
-                  {cellSchedules.map((sch) => (
-                    <div
-                      key={sch.id}
-                      className="bg-blue-200 rounded p-1 mb-1 text-xs truncate"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleScheduleClick(sch);
-                      }}
-                    >
-                      {sch.title}
-                    </div>
-                  ))}
+                  <div
+                    className={`h-full flex flex-col ${isSingle ? 'justify-center' : 'justify-start gap-1'}`}
+                  >
+                    {cellSchedules.map((sch) => (
+                      <div
+                        key={sch.id}
+                        className={`bg-blue-200 rounded text-xs truncate px-1 py-0.5 ${isSingle ? 'h-full' : 'h-1/2'}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScheduleClick(sch);
+                        }}
+                      >
+                        {sch.title}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               );
             })}
