@@ -107,7 +107,12 @@ export default function Page() {
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i));
 
   if (!isSignedIn) {
-    return <div className="p-4">로그인이 필요합니다.</div>;
+    return (
+      <div className="p-4">
+        <h1 className="text-xl font-bold mb-2">로그인이 필요합니다.</h1>
+        <a href="/sign-in" className="text-blue-600 underline">로그인 하러 가기</a>
+      </div>
+    );
   }
 
   return (
