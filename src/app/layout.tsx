@@ -9,8 +9,8 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'bohol',
-  description: '여행 일정에 AI를 더하다',
+  title: 'Ottrip',
+  description: '여행 일정을 쉽게 만들고 공유하는 Ottrip',
 }
 
 export default function RootLayout({
