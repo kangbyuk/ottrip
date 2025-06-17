@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
@@ -17,12 +17,19 @@ export default function Page() {
   const [userId, setUserId] = useState('');
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
+  const sixAMRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
       setUserId(user.id);
     }
   }, [isSignedIn, user]);
+
+  useEffect(() => {
+    if (sixAMRef.current) {
+      sixAMRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    }
+  }, []);
 
   const refreshSchedules = async () => {
     if (!userId) return;
@@ -111,7 +118,7 @@ export default function Page() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 overflow-y-auto h-screen">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
       <div className="grid grid-cols-8 gap-px border mt-4">
@@ -130,6 +137,7 @@ export default function Page() {
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
+                  ref={hour === 6 ? sixAMRef : null}
                   className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
                   onClick={() => handleCellClick(day, hour)}
                 >
