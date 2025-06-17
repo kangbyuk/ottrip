@@ -29,14 +29,12 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
-
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
-
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -55,7 +53,7 @@ export default function Page() {
       if (scrollTargetRef.current) {
         scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 100);
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
@@ -122,14 +120,16 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      <div className="mb-4">
-        <img src="/logo.png" alt="OTTRIP 로고" className="h-8" />
+      {/* 로고 */}
+      <div className="mb-2">
+        <img src="/logo.png" alt="OTTRIP Logo" className="h-8" />
       </div>
 
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-y-auto h-[calc(100vh-180px)]">
-        <div className="grid grid-cols-8 gap-px border min-w-[900px]">
+      {/* 스케줄표 */}
+      <div className="overflow-auto max-h-[75vh] mt-4 border">
+        <div className="grid grid-cols-8 gap-px">
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
             <div
