@@ -29,14 +29,12 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
-
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
-
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -53,24 +51,21 @@ export default function Page() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 384; // 6시 = 64px * 6
+        scrollContainerRef.current.scrollTop = 384; // 6시 위치
       }
-    }, 100);
+    }, 200); // 렌더링 대기
     return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
     const selectedCell = new Date(day);
     selectedCell.setHours(hour, 0, 0, 0);
-
     const endCell = new Date(selectedCell);
     endCell.setHours(selectedCell.getHours() + 1);
-
     const toISOStringLocal = (date: Date) => {
       const tzOffset = date.getTimezoneOffset() * 60000;
       return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
     };
-
     setDefaultStart(toISOStringLocal(selectedCell));
     setDefaultEnd(toISOStringLocal(endCell));
     setSelectedSchedule(null);
@@ -92,19 +87,15 @@ export default function Page() {
 
   const findSchedulesForCell = (date: Date, hour: number) => {
     const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-
     return schedules.filter((sch) => {
       const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
       const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
-
       const cellStart = new Date(date);
       cellStart.setHours(hour, 0, 0, 0);
       const cellEnd = new Date(cellStart);
       cellEnd.setHours(cellStart.getHours() + 1);
-
       const utcCellStart = toUtc(cellStart);
       const utcCellEnd = toUtc(cellEnd);
-
       return (
         (start >= utcCellStart && start < utcCellEnd) ||
         (end > utcCellStart && end <= utcCellEnd) ||
@@ -124,7 +115,7 @@ export default function Page() {
     <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div ref={scrollContainerRef} className="grid grid-cols-8 gap-px border mt-4 h-[calc(100vh-200px)] overflow-y-scroll">
+      <div className="grid grid-cols-8 gap-px border mt-4" ref={scrollContainerRef} style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
         <div className="bg-gray-100 p-2">시간</div>
         {weekDays.map((day) => (
           <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold">
