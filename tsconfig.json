@@ -2,14 +2,11 @@
   "compilerOptions": {
     "baseUrl": "./src",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    // 아래는 이미 있을 수 있는 기존 설정이니 수정하지 마세요
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",  // 🔧 추가
     "jsx": "preserve",
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
@@ -18,18 +15,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "strict": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "skipLibCheck": true,
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "types": ["@clerk/nextjs"],  // 🔧 추가
+    "plugins": [{ "name": "next" }]
   },
   "include": [
     "**/*.ts",
@@ -37,7 +27,5 @@
     "next-env.d.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
