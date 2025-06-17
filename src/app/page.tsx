@@ -48,14 +48,16 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
-  // 6시 스크롤 위치로 이동
+  // 🎯 스크롤 위치 6시로 이동
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const scrollToTarget = () => {
       if (scrollRef.current) {
         scrollRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 100);
-    return () => clearTimeout(timer);
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToTarget);
+    });
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
