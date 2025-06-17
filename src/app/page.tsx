@@ -1,5 +1,3 @@
-// src/app/page.tsx
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -129,29 +127,28 @@ export default function Page() {
             <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
             {weekDays.map((day) => {
               const cellSchedules = findSchedulesForCell(day, hour);
-              const isSingle = cellSchedules.length === 1;
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
-                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1"
+                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
                   onClick={() => handleCellClick(day, hour)}
                 >
-                  <div
-                    className={`h-full flex flex-col ${isSingle ? 'justify-center' : 'justify-start gap-1'}`}
-                  >
-                    {cellSchedules.map((sch) => (
-                      <div
-                        key={sch.id}
-                        className={`bg-blue-200 rounded text-xs truncate px-1 py-0.5 ${isSingle ? 'h-full' : 'h-1/2'}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleScheduleClick(sch);
-                        }}
-                      >
-                        {sch.title}
-                      </div>
-                    ))}
-                  </div>
+                  {cellSchedules.map((sch) => (
+                    <div
+                      key={sch.id}
+                      className="bg-blue-200 rounded p-1 text-xs truncate"
+                      style={{
+                        height: `${100 / cellSchedules.length}%`,
+                        marginBottom: '2px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScheduleClick(sch);
+                      }}
+                    >
+                      {sch.title}
+                    </div>
+                  ))}
                 </div>
               );
             })}
