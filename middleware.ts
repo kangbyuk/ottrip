@@ -1,10 +1,20 @@
-// middleware.ts
-import { authMiddleware } from "@clerk/nextjs/server"; // ← 이게 v6에서 맞는 방식
+// /middleware.ts
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default authMiddleware({
-  publicRoutes: ["/", "/sign-in(.*)", "/sign-up(.*)"],
-});
+export function middleware(req: NextRequest) {
+  const { userId } = auth();
+
+  const isPublicPath = ["/", "/sign-in", "/sign-up"].includes(req.nextUrl.pathname);
+
+  if (!userId && !isPublicPath) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*|favicon.ico).*)"],
+  matcher: ["/((?!_next|.*\\..*).*)"],
 };
