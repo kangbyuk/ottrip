@@ -29,14 +29,12 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
-
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
-
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -50,6 +48,7 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
+  // ✅ 6시 위치 스크롤 타겟
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollTargetRef.current) {
@@ -62,7 +61,6 @@ export default function Page() {
   const handleCellClick = (day: Date, hour: number) => {
     const selectedCell = new Date(day);
     selectedCell.setHours(hour, 0, 0, 0);
-
     const endCell = new Date(selectedCell);
     endCell.setHours(selectedCell.getHours() + 1);
 
@@ -92,7 +90,6 @@ export default function Page() {
 
   const findSchedulesForCell = (date: Date, hour: number) => {
     const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-
     return schedules.filter((sch) => {
       const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
       const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
@@ -122,18 +119,16 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* 상단 로고 */}
+      {/* OTTRIP 로고 */}
       <div className="flex items-center justify-between mb-4">
-        <img src="/logo.png" alt="OTTRIP Logo" className="h-14 w-auto" />
+        <img src="/logo.png" alt="OTTRIP Logo" className="h-20 w-auto" />
       </div>
 
-      {/* 주간 선택 */}
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      {/* 스케줄표 */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] mt-4 border">
+      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] min-h-[900px] mt-4 border">
         <div className="grid grid-cols-8 gap-px min-w-[800px]">
-          {/* 첫줄 고정 헤더 */}
+          {/* 헤더 고정 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
             <div
@@ -144,7 +139,7 @@ export default function Page() {
             </div>
           ))}
 
-          {/* 0~23시간 반복 */}
+          {/* 스케줄 셀 */}
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
               <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
@@ -182,7 +177,6 @@ export default function Page() {
         </div>
       </div>
 
-      {/* 모달 */}
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
