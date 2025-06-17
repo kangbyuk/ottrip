@@ -7,6 +7,7 @@ import ScheduleModal from '@/components/ui/ScheduleModal';
 import WeekSelector from '@/components/WeekSelector';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import Image from 'next/image';
 
 export default function Page() {
   const { isSignedIn, user } = useUser();
@@ -35,6 +36,7 @@ export default function Page() {
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
+
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -48,19 +50,20 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
-  // ✅ 6시 위치 스크롤 타겟
+  // ✅ 디폴트 스크롤 위치 (6시로)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollTargetRef.current) {
         scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 200);
+    }, 300);
     return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
     const selectedCell = new Date(day);
     selectedCell.setHours(hour, 0, 0, 0);
+
     const endCell = new Date(selectedCell);
     endCell.setHours(selectedCell.getHours() + 1);
 
@@ -90,6 +93,7 @@ export default function Page() {
 
   const findSchedulesForCell = (date: Date, hour: number) => {
     const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+
     return schedules.filter((sch) => {
       const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
       const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
@@ -119,16 +123,17 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* OTTRIP 로고 */}
-      <div className="flex items-center justify-between mb-4">
-        <img src="/logo.png" alt="OTTRIP Logo" className="h-20 w-auto" />
+      {/* ✅ 로고 */}
+      <div className="mb-4 flex items-center">
+        <Image src="/ottrip-logo.png" alt="OTTRIP Logo" width={120} height={40} />
       </div>
 
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] min-h-[900px] mt-4 border">
-        <div className="grid grid-cols-8 gap-px min-w-[800px]">
-          {/* 헤더 고정 */}
+      {/* ✅ 표 스크롤 + 헤더 고정 */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] mt-4 border">
+        <div className="grid grid-cols-8 gap-px min-w-[700px]">
+          {/* 헤더 줄 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
             <div
@@ -139,13 +144,14 @@ export default function Page() {
             </div>
           ))}
 
-          {/* 스케줄 셀 */}
+          {/* 시간표 */}
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
               <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
               {weekDays.map((day) => {
                 const cellSchedules = findSchedulesForCell(day, hour);
                 const isScrollTarget = day.getDay() === 0 && hour === 6;
+
                 return (
                   <div
                     key={`${day.toISOString()}-${hour}`}
