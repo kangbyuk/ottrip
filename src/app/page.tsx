@@ -127,7 +127,7 @@ export default function Page() {
     <div className="p-4">
       {/* 로고 + WeekSelector 한 줄 */}
       <div className="flex items-center justify-between mb-2">
-        <Image src="/ottrip-logo.png" alt="OTTRIP Logo" width={120} height={40} />
+      <Image src="/logo.png" alt="OTTRIP Logo" width={120} height={40} />
         <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 
