@@ -51,12 +51,12 @@ export default function Page() {
   }, [userId, selectedDate]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const raf = requestAnimationFrame(() => {
       if (scrollTargetRef.current) {
         scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 100);
-    return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
