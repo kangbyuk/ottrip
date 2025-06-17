@@ -17,7 +17,7 @@ export default function Page() {
   const [userId, setUserId] = useState('');
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
-  const scrollTargetRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -51,12 +51,12 @@ export default function Page() {
   }, [userId, selectedDate]);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      if (scrollTargetRef.current) {
-        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+    const timer = setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 384; // 6시 = 64px * 6
       }
-    });
-    return () => cancelAnimationFrame(raf);
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
@@ -124,7 +124,7 @@ export default function Page() {
     <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="grid grid-cols-8 gap-px border mt-4">
+      <div ref={scrollContainerRef} className="grid grid-cols-8 gap-px border mt-4 h-[calc(100vh-200px)] overflow-y-scroll">
         <div className="bg-gray-100 p-2">시간</div>
         {weekDays.map((day) => (
           <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold">
@@ -137,13 +137,11 @@ export default function Page() {
             <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
             {weekDays.map((day) => {
               const cellSchedules = findSchedulesForCell(day, hour);
-              const isScrollTarget = day.getDay() === 0 && hour === 6;
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
                   className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
                   onClick={() => handleCellClick(day, hour)}
-                  ref={isScrollTarget ? scrollTargetRef : undefined}
                 >
                   {cellSchedules.map((sch) => (
                     <div
