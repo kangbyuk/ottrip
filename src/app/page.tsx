@@ -29,12 +29,14 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
+
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
         console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
         throw new Error('API 응답이 JSON이 아닙니다.');
       }
+
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -51,9 +53,9 @@ export default function Page() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollTargetRef.current) {
-        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, []);
 
@@ -120,16 +122,18 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* 로고 영역 */}
-      <div className="mb-4">
-        <img src="/logo.png" alt="OTTRIP Logo" className="h-10" />
+      {/* 상단 로고 */}
+      <div className="flex items-center justify-between mb-4">
+        <img src="/logo.png" alt="OTTRIP Logo" className="h-14 w-auto" />
       </div>
 
+      {/* 주간 선택 */}
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-y-auto max-h-[70vh] mt-4 border rounded">
-        <div className="grid grid-cols-8 gap-px">
-          {/* 요일/날짜 고정 헤더 */}
+      {/* 스케줄표 */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] mt-4 border">
+        <div className="grid grid-cols-8 gap-px min-w-[800px]">
+          {/* 첫줄 고정 헤더 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
             <div
@@ -140,7 +144,7 @@ export default function Page() {
             </div>
           ))}
 
-          {/* 시간별 셀 */}
+          {/* 0~23시간 반복 */}
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
               <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
@@ -178,6 +182,7 @@ export default function Page() {
         </div>
       </div>
 
+      {/* 모달 */}
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
