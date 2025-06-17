@@ -29,6 +29,7 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
+
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
@@ -54,7 +55,7 @@ export default function Page() {
       if (scrollTargetRef.current) {
         scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
-    }, 300); // 딜레이 약간 줘야 작동 확실함
+    }, 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -123,11 +124,14 @@ export default function Page() {
     <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-y-auto max-h-[calc(100vh-200px)] border mt-4">
+      <div className="mt-4 h-[calc(100vh-180px)] overflow-y-auto border">
         <div className="grid grid-cols-8 gap-px">
-          <div className="bg-gray-100 p-2">시간</div>
+          <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
-            <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold">
+            <div
+              key={day.toISOString()}
+              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+            >
               {format(day, 'MM/dd (E)', { locale: ko })}
             </div>
           ))}
@@ -138,7 +142,6 @@ export default function Page() {
               {weekDays.map((day) => {
                 const cellSchedules = findSchedulesForCell(day, hour);
                 const isScrollTarget = day.getDay() === 0 && hour === 6;
-
                 return (
                   <div
                     key={`${day.toISOString()}-${hour}`}
