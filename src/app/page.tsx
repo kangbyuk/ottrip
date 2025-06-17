@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect, useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
@@ -17,7 +17,7 @@ export default function Page() {
   const [userId, setUserId] = useState('');
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
-  const tableRef = useRef<HTMLDivElement>(null);
+  const scrollTargetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -29,6 +29,7 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
+
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         const text = await res.text();
@@ -49,19 +50,19 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
-  // ✅ 렌더 직후 6시로 스크롤 이동 (useLayoutEffect로 정확하게)
-  useLayoutEffect(() => {
-    const scrollToHour = 6;
-    const container = tableRef.current;
-    if (container) {
-      const hourHeight = 64; // h-16
-      container.scrollTop = scrollToHour * hourHeight;
-    }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollTargetRef.current) {
+        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
     const selectedCell = new Date(day);
     selectedCell.setHours(hour, 0, 0, 0);
+
     const endCell = new Date(selectedCell);
     endCell.setHours(selectedCell.getHours() + 1);
 
@@ -121,48 +122,59 @@ export default function Page() {
 
   return (
     <div className="p-4">
+      <div className="mb-4">
+        <img src="/logo.png" alt="OTTRIP 로고" className="h-8" />
+      </div>
+
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="grid grid-cols-8 gap-px border mt-4" ref={tableRef} style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}>
-        <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
-        {weekDays.map((day) => (
-          <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10">
-            {format(day, 'MM/dd (E)', { locale: ko })}
-          </div>
-        ))}
+      <div className="overflow-y-auto h-[calc(100vh-180px)]">
+        <div className="grid grid-cols-8 gap-px border min-w-[900px]">
+          <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
+          {weekDays.map((day) => (
+            <div
+              key={day.toISOString()}
+              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+            >
+              {format(day, 'MM/dd (E)', { locale: ko })}
+            </div>
+          ))}
 
-        {Array.from({ length: 24 }).map((_, hour) => (
-          <React.Fragment key={`row-${hour}`}>
-            <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
-            {weekDays.map((day) => {
-              const cellSchedules = findSchedulesForCell(day, hour);
-              return (
-                <div
-                  key={`${day.toISOString()}-${hour}`}
-                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
-                  onClick={() => handleCellClick(day, hour)}
-                >
-                  {cellSchedules.map((sch) => (
-                    <div
-                      key={sch.id}
-                      className="bg-blue-200 rounded p-1 text-xs truncate"
-                      style={{
-                        height: `${100 / cellSchedules.length}%`,
-                        marginBottom: '2px',
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleScheduleClick(sch);
-                      }}
-                    >
-                      {sch.title}
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </React.Fragment>
-        ))}
+          {Array.from({ length: 24 }).map((_, hour) => (
+            <React.Fragment key={`row-${hour}`}>
+              <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
+              {weekDays.map((day) => {
+                const cellSchedules = findSchedulesForCell(day, hour);
+                const isScrollTarget = day.getDay() === 0 && hour === 6;
+                return (
+                  <div
+                    key={`${day.toISOString()}-${hour}`}
+                    className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
+                    onClick={() => handleCellClick(day, hour)}
+                    ref={isScrollTarget ? scrollTargetRef : undefined}
+                  >
+                    {cellSchedules.map((sch) => (
+                      <div
+                        key={sch.id}
+                        className="bg-blue-200 rounded p-1 text-xs truncate"
+                        style={{
+                          height: `${100 / cellSchedules.length}%`,
+                          marginBottom: '2px',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleScheduleClick(sch);
+                        }}
+                      >
+                        {sch.title}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
 
       <ScheduleModal
