@@ -18,6 +18,7 @@ export default function Page() {
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
   const scrollTargetRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -52,8 +53,9 @@ export default function Page() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (scrollTargetRef.current) {
-        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      if (scrollContainerRef.current && scrollTargetRef.current) {
+        const target = scrollTargetRef.current;
+        scrollContainerRef.current.scrollTop = target.offsetTop;
       }
     }, 100);
     return () => clearTimeout(timer);
@@ -124,53 +126,54 @@ export default function Page() {
     <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-      <div className="overflow-y-auto max-h-[70vh] border mt-4 rounded">
-        <div className="grid grid-cols-8 gap-px">
-          <div className="bg-gray-100 p-2">시간</div>
-          {weekDays.map((day) => (
-            <div
-              key={day.toISOString()}
-              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10 bg-white"
-            >
-              {format(day, 'MM/dd (E)', { locale: ko })}
-            </div>
-          ))}
+      <div
+        ref={scrollContainerRef}
+        className="grid grid-cols-8 gap-px border mt-4 max-h-[calc(100vh-200px)] overflow-y-auto"
+      >
+        <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
+        {weekDays.map((day) => (
+          <div
+            key={day.toISOString()}
+            className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+          >
+            {format(day, 'MM/dd (E)', { locale: ko })}
+          </div>
+        ))}
 
-          {Array.from({ length: 24 }).map((_, hour) => (
-            <React.Fragment key={`row-${hour}`}>
-              <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
-              {weekDays.map((day) => {
-                const cellSchedules = findSchedulesForCell(day, hour);
-                const isScrollTarget = day.getDay() === 0 && hour === 6;
-                return (
-                  <div
-                    key={`${day.toISOString()}-${hour}`}
-                    className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
-                    onClick={() => handleCellClick(day, hour)}
-                    ref={isScrollTarget ? scrollTargetRef : undefined}
-                  >
-                    {cellSchedules.map((sch) => (
-                      <div
-                        key={sch.id}
-                        className="bg-blue-200 rounded p-1 text-xs truncate"
-                        style={{
-                          height: `${100 / cellSchedules.length}%`,
-                          marginBottom: '2px',
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleScheduleClick(sch);
-                        }}
-                      >
-                        {sch.title}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-        </div>
+        {Array.from({ length: 24 }).map((_, hour) => (
+          <React.Fragment key={`row-${hour}`}>
+            <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
+            {weekDays.map((day) => {
+              const cellSchedules = findSchedulesForCell(day, hour);
+              const isScrollTarget = day.getDay() === 0 && hour === 6;
+              return (
+                <div
+                  key={`${day.toISOString()}-${hour}`}
+                  className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
+                  onClick={() => handleCellClick(day, hour)}
+                  ref={isScrollTarget ? scrollTargetRef : undefined}
+                >
+                  {cellSchedules.map((sch) => (
+                    <div
+                      key={sch.id}
+                      className="bg-blue-200 rounded p-1 text-xs truncate"
+                      style={{
+                        height: `${100 / cellSchedules.length}%`,
+                        marginBottom: '2px',
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScheduleClick(sch);
+                      }}
+                    >
+                      {sch.title}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </div>
 
       <ScheduleModal
