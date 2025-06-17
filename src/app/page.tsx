@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
@@ -24,12 +24,6 @@ export default function Page() {
       setUserId(user.id);
     }
   }, [isSignedIn, user]);
-
-  useEffect(() => {
-    if (sixAMRef.current) {
-      sixAMRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
-    }
-  }, []);
 
   const refreshSchedules = async () => {
     if (!userId) return;
@@ -55,6 +49,14 @@ export default function Page() {
       refreshSchedules();
     }
   }, [userId, selectedDate]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (sixAMRef.current) {
+        sixAMRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      }
+    });
+  }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
     const selectedCell = new Date(day);
@@ -118,7 +120,7 @@ export default function Page() {
   }
 
   return (
-    <div className="p-4 overflow-y-auto h-screen">
+    <div className="p-4">
       <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
       <div className="grid grid-cols-8 gap-px border mt-4">
@@ -134,10 +136,11 @@ export default function Page() {
             <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
             {weekDays.map((day) => {
               const cellSchedules = findSchedulesForCell(day, hour);
+              const isSixAM = hour === 6 && day.getDay() === 0;
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
-                  ref={hour === 6 ? sixAMRef : null}
+                  ref={isSixAM ? sixAMRef : null}
                   className="h-16 border cursor-pointer hover:bg-gray-100 p-1 relative"
                   onClick={() => handleCellClick(day, hour)}
                 >
