@@ -130,12 +130,12 @@ export default function Page() {
       <Image
   src="/logo.png"
   alt="OTTRIP logo"
-  width={100}
-  height={40}
+  width={160}
+  height={80}
   className="h-10 w-auto"
 />
         <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
-      </div>
+      </div>ㄴ
 
       {/* 표 스크롤 + 헤더 고정 */}
       <div
