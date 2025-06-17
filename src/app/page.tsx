@@ -19,6 +19,7 @@ export default function Page() {
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
   const scrollTargetRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -50,11 +51,12 @@ export default function Page() {
     }
   }, [userId, selectedDate]);
 
-  // ✅ 디폴트 스크롤 위치 (6시로)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (scrollTargetRef.current) {
-        scrollTargetRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+      const container = scrollContainerRef.current;
+      const target = scrollTargetRef.current;
+      if (container && target) {
+        container.scrollTop = target.offsetTop - container.offsetTop;
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -123,15 +125,17 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* ✅ 로고 */}
-      <div className="mb-4 flex items-center">
+      {/* 로고 + WeekSelector 한 줄 */}
+      <div className="flex items-center justify-between mb-2">
         <Image src="/ottrip-logo.png" alt="OTTRIP Logo" width={120} height={40} />
+        <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 
-      <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
-
-      {/* ✅ 표 스크롤 + 헤더 고정 */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[80vh] mt-4 border">
+      {/* 표 스크롤 + 헤더 고정 */}
+      <div
+        className="overflow-x-auto overflow-y-auto max-h-[75vh] mt-2 border"
+        ref={scrollContainerRef}
+      >
         <div className="grid grid-cols-8 gap-px min-w-[700px]">
           {/* 헤더 줄 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
