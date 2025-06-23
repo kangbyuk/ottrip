@@ -1,3 +1,4 @@
+// ✅ 완벽하게 lint 에러 제거한 page.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -5,7 +6,6 @@ import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
 import WeekSelector from '@/components/WeekSelector';
-import LocationSelector from '@/components/LocationSelector';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Image from 'next/image';
@@ -23,6 +23,9 @@ export default function Page() {
 
   const scrollTargetRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i));
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -46,8 +49,8 @@ export default function Page() {
     const end = format(addDays(startOfWeekDate, 6), 'yyyy-MM-dd');
     try {
       const res = await fetch(`/api/daily-locations/list?start=${start}&end=${end}`);
-      const result = await res.json();
-      const mapped = result.reduce((acc: any, cur: any) => {
+      const result: { date: string; country: string; city: string | null }[] = await res.json();
+      const mapped = result.reduce<Record<string, { country: string; city: string | null }>>((acc, cur) => {
         acc[cur.date] = { country: cur.country, city: cur.city };
         return acc;
       }, {});
@@ -96,22 +99,23 @@ export default function Page() {
   const handleScheduleClick = (schedule: ScheduleData) => {
     const start = typeof schedule?.start_time === 'string'
       ? schedule.start_time
-      : (new Date(schedule?.start_time)).toISOString() ?? '';
+      : new Date(schedule?.start_time).toISOString();
     const end = typeof schedule?.end_time === 'string'
       ? schedule.end_time
-      : (new Date(schedule?.end_time)).toISOString() ?? '';
+      : new Date(schedule?.end_time).toISOString();
+
     setDefaultStart(start);
     setDefaultEnd(end);
     setSelectedSchedule(schedule);
     setIsModalOpen(true);
   };
 
-  const findSchedulesForCell = (date: Date, hour: number) => {
+  const findSchedulesForCell = (date: Date, hour: number): ScheduleData[] => {
     const toUtc = (date: Date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000);
 
     return schedules.filter((sch) => {
-      const start = sch.start_time ? new Date(sch.start_time) : new Date(0);
-      const end = sch.end_time ? new Date(sch.end_time) : new Date(0);
+      const start = new Date(sch.start_time);
+      const end = new Date(sch.end_time);
 
       const cellStart = new Date(date);
       cellStart.setHours(hour, 0, 0, 0);
@@ -128,9 +132,6 @@ export default function Page() {
       );
     });
   };
-
-  const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 0 });
-  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i));
 
   if (!isSignedIn) {
     return <div className="p-4">로그인이 필요합니다.</div>;
@@ -156,14 +157,13 @@ export default function Page() {
         <div className="grid grid-cols-8 gap-px min-w-[700px]">
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
-  <div
-    key={day.toISOString()}
-    className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
-  >
-    <div>{format(day, 'MM/dd (E)', { locale: ko })}</div>
-    {/* LocationSelector 제거 */}
-  </div>
-))}
+            <div
+              key={day.toISOString()}
+              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+            >
+              <div>{format(day, 'MM/dd (E)', { locale: ko })}</div>
+            </div>
+          ))}
 
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
@@ -208,7 +208,7 @@ export default function Page() {
         onClose={() => setIsModalOpen(false)}
         refresh={refreshSchedules}
         setSelectedDate={setSelectedDate}
-        schedule={selectedSchedule!}
+        schedule={selectedSchedule}
         userId={userId}
         defaultStart={defaultStart}
         defaultEnd={defaultEnd}
