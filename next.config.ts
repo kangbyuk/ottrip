@@ -1,8 +1,10 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true, // ✅ 배포 시 ESLint 에러 무시
-  },
+  reactStrictMode: true,
+  // ⛔ TypeScript 오류 방지용 as any 처리
+  experimental: {
+    serverActions: true,
+  } as any,
+  transpilePackages: ['@clerk/nextjs'],
 };
 
-module.exports = nextConfig;
+export default nextConfig;

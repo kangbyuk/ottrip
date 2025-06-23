@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { ScheduleData } from '@/types/schedule';
 import ScheduleModal from '@/components/ui/ScheduleModal';
 import WeekSelector from '@/components/WeekSelector';
+import LocationSelector from '@/components/LocationSelector';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Image from 'next/image';
@@ -18,6 +19,8 @@ export default function Page() {
   const [userId, setUserId] = useState('');
   const [defaultStart, setDefaultStart] = useState('');
   const [defaultEnd, setDefaultEnd] = useState('');
+  const [dailyLocations, setDailyLocations] = useState<Record<string, { country: string; city: string | null }>>({});
+
   const scrollTargetRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -31,13 +34,6 @@ export default function Page() {
     if (!userId) return;
     try {
       const res = await fetch(`/api/schedules/list?user_id=${userId}`);
-      const contentType = res.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        const text = await res.text();
-        console.error('❌ JSON 아님! 응답 내용:', text.slice(0, 300));
-        throw new Error('API 응답이 JSON이 아닙니다.');
-      }
-
       const data = await res.json();
       setSchedules(data);
     } catch (error) {
@@ -45,9 +41,26 @@ export default function Page() {
     }
   };
 
+  const refreshDailyLocations = async () => {
+    const start = format(startOfWeekDate, 'yyyy-MM-dd');
+    const end = format(addDays(startOfWeekDate, 6), 'yyyy-MM-dd');
+    try {
+      const res = await fetch(`/api/daily-locations/list?start=${start}&end=${end}`);
+      const result = await res.json();
+      const mapped = result.reduce((acc: any, cur: any) => {
+        acc[cur.date] = { country: cur.country, city: cur.city };
+        return acc;
+      }, {});
+      setDailyLocations(mapped);
+    } catch (err) {
+      console.error('daily_locations 불러오기 실패', err);
+    }
+  };
+
   useEffect(() => {
     if (userId) {
       refreshSchedules();
+      refreshDailyLocations();
     }
   }, [userId, selectedDate]);
 
@@ -125,36 +138,33 @@ export default function Page() {
 
   return (
     <div className="p-4">
-      {/* 로고 + WeekSelector 한 줄 */}
       <div className="flex items-center justify-between mb-2">
-      <Image
-  src="/logo.png"
-  alt="OTTRIP logo"
-  width={160}
-  height={80}
-  className="h-10 w-auto"
-/>
+        <Image
+          src="/logo.png"
+          alt="OTTRIP logo"
+          width={160}
+          height={80}
+          className="h-10 w-auto"
+        />
         <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
-      </div>ㄴ
+      </div>
 
-      {/* 표 스크롤 + 헤더 고정 */}
       <div
         className="overflow-x-auto overflow-y-auto max-h-[75vh] mt-2 border"
         ref={scrollContainerRef}
       >
         <div className="grid grid-cols-8 gap-px min-w-[700px]">
-          {/* 헤더 줄 */}
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
-            <div
-              key={day.toISOString()}
-              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
-            >
-              {format(day, 'MM/dd (E)', { locale: ko })}
-            </div>
-          ))}
+  <div
+    key={day.toISOString()}
+    className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
+  >
+    <div>{format(day, 'MM/dd (E)', { locale: ko })}</div>
+    {/* LocationSelector 제거 */}
+  </div>
+))}
 
-          {/* 시간표 */}
           {Array.from({ length: 24 }).map((_, hour) => (
             <React.Fragment key={`row-${hour}`}>
               <div className="bg-gray-50 p-2 text-sm text-center">{`${hour}:00`}</div>
@@ -202,6 +212,11 @@ export default function Page() {
         userId={userId}
         defaultStart={defaultStart}
         defaultEnd={defaultEnd}
+        dailyLocation={
+          defaultStart
+            ? dailyLocations[format(new Date(defaultStart), 'yyyy-MM-dd')]
+            : undefined
+        }
       />
     </div>
   );

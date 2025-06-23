@@ -1,19 +1,36 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
+import { City } from 'country-state-city';
+import { ScheduleData } from '@/types/schedule';
+import CountryAutocomplete from '@/components/ui/CountryAutocomplete';
+import CityAutocomplete from '@/components/ui/CityAutocomplete';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  refresh: () => void;
-  setSelectedDate: (date: Date) => void;
-  schedule: any;
+  refresh: () => Promise<void>;
+  setSelectedDate: React.Dispatch<React.SetStateAction<Date>>;
+  schedule: ScheduleData | null;
   userId: string;
   defaultStart: string;
   defaultEnd: string;
+  dailyLocation?: {
+    country: string;
+    city: string | null;
+  };
 };
 
-const ScheduleModal = ({
+const ScheduleModal: React.FC<Props> = ({
   isOpen,
   onClose,
   refresh,
@@ -22,117 +39,102 @@ const ScheduleModal = ({
   userId,
   defaultStart,
   defaultEnd,
-}: Props) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [start_time, setStartTime] = useState(defaultStart);
-  const [end_time, setEndTime] = useState(defaultEnd);
+  dailyLocation,
+}) => {
+  const [startTime, setStartTime] = useState(defaultStart.slice(11, 16));
+  const [endTime, setEndTime] = useState(defaultEnd.slice(11, 16));
+  const [title, setTitle] = useState(schedule?.title || '');
+  const [content, setContent] = useState(schedule?.content || '');
+  const [country, setCountry] = useState(schedule?.country || dailyLocation?.country || '');
+  const [city, setCity] = useState(schedule?.city || dailyLocation?.city || '');
 
   useEffect(() => {
-    if (schedule) {
-      setTitle(schedule.title || '');
-      setDescription(schedule.description || '');
-      setStartTime(schedule.start_time?.slice(0, 16) || defaultStart);
-      setEndTime(schedule.end_time?.slice(0, 16) || defaultEnd);
-    } else {
-      setTitle('');
-      setDescription('');
-      setStartTime(defaultStart);
-      setEndTime(defaultEnd);
-    }
-  }, [schedule, defaultStart, defaultEnd]);
+    if (defaultStart) setStartTime(defaultStart.slice(11, 16));
+    if (defaultEnd) setEndTime(defaultEnd.slice(11, 16));
+  }, [defaultStart, defaultEnd]);
 
   const handleSave = async () => {
+    const payload = {
+      title,
+      content,
+      start_time: `${defaultStart.slice(0, 10)}T${startTime}`,
+      end_time: `${defaultStart.slice(0, 10)}T${endTime}`,
+      user_id: userId,
+      date: defaultStart.slice(0, 10),
+      country,
+      city,
+    };
+
     try {
-      const payload = {
-        id: schedule?.id,
-        title,
-        description,
-        start_time,
-        end_time,
-        user_id: userId,
-      };
-
-      console.log('저장 요청 내용', payload);
-
       const res = await fetch('/api/schedules/save', {
-        method: 'POST',
+        method: schedule ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(schedule ? { ...payload, id: schedule.id } : payload),
       });
 
       const result = await res.json();
-      console.log('서버 응답:', result);
 
-      if (result.success) {
-        refresh();
-        onClose();
-        const date = new Date(start_time);
-        setSelectedDate(date);
-      } else {
-        console.error('저장 실패:', result.error || result);
+      if (!result.success) {
+        throw new Error(result.error);
       }
-    } catch (error) {
-      console.error('에러 발생:', error);
+
+      await refresh();
+      onClose();
+    } catch (error: any) {
+      alert(`저장 실패: ${error.message || error}`);
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded shadow-md w-[400px]">
-        <h2 className="text-lg font-bold mb-4">일정 저장</h2>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="space-y-4">
+        <DialogTitle>일정 입력</DialogTitle>
 
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">제목</label>
-          <input
-            type="text"
-            className="w-full border rounded px-3 py-2"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+        <div>
+          <div className="text-sm text-gray-500">일자</div>
+          <div className="text-base font-medium">
+            {defaultStart
+              ? format(new Date(defaultStart), 'yyyy년 MM월 dd일')
+              : '날짜 없음'}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+        </div>
+
+        <Input placeholder="제목" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Textarea placeholder="내용" value={content} onChange={(e) => setContent(e.target.value)} />
+
+        <div className="space-y-2">
+          <label className="text-sm text-gray-600">국가</label>
+          <CountryAutocomplete
+            value={country}
+            onChange={(val) => {
+              setCountry(val);
+              setCity('');
+            }}
           />
         </div>
 
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">상세 내용</label>
-          <textarea
-            className="w-full border rounded px-3 py-2"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+        <div className="space-y-2">
+          <label className="text-sm text-gray-600">도시</label>
+          <CityAutocomplete
+            countryCode={country}
+            value={city}
+            onChange={(val) => setCity(val)}
           />
         </div>
 
-        <div className="mb-2">
-          <label className="block text-sm font-medium mb-1">시작 시간</label>
-          <input
-            type="datetime-local"
-            className="w-full border rounded px-3 py-2"
-            value={start_time}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">종료 시간</label>
-          <input
-            type="datetime-local"
-            className="w-full border rounded px-3 py-2"
-            value={end_time}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-        </div>
-
-        <div className="flex justify-end gap-2">
-          <button className="px-4 py-2 bg-gray-300 rounded" onClick={onClose}>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="ghost" onClick={onClose}>
             취소
-          </button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded" onClick={handleSave}>
-            저장
-          </button>
+          </Button>
+          <Button onClick={handleSave}>{schedule ? '수정' : '저장'}</Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

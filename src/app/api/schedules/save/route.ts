@@ -1,30 +1,50 @@
-// /src/app/api/schedules/save/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { Database } from '@/types/supabase';
 
-export async function POST(req: NextRequest) {
-  const supabase = createServerComponentClient<Database>({ cookies: () => cookies() });
+export async function POST(req: Request) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    const body = await req.json();
+    console.log('🧪 저장 시도 중인 데이터:', body);
 
-  const data = await req.json();
-  const { id, title, description, start_time, end_time, user_id } = data;
+    const {
+      id,
+      user_id,
+      title,
+      content, // ✅ 클라이언트에서는 'content'로 보냄
+      start_time,
+      end_time,
+      country,
+      city,
+    } = body;
 
-  let result;
-  if (id) {
-    result = await supabase
+    const { data, error } = await supabase
       .from('schedules')
-      .update({ title, description, start_time, end_time })
-      .eq('id', id);
-  } else {
-    result = await supabase
-      .from('schedules')
-      .insert({ title, description, start_time, end_time, user_id });
-  }
+      .upsert(
+        {
+          id,
+          user_id,
+          title,
+          description: content || '', // ✅ 실제 DB 필드는 'description'
+          start_time,
+          end_time,
+          country: country || null,
+          city: city || null,
+        },
+        {
+          onConflict: 'id',
+        }
+      );
 
-  if (result.error) {
-    return NextResponse.json({ error: result.error.message }, { status: 500 });
-  }
+    if (error) {
+      console.error('❌ Supabase 저장 실패:', error.message);
+      return NextResponse.json({ success: false, error: error.message });
+    }
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, data });
+  } catch (err: any) {
+    console.error('❌ API 처리 중 예외 발생:', err.message);
+    return NextResponse.json({ success: false, error: '서버 오류 발생' });
+  }
 }
