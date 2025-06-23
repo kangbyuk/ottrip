@@ -43,8 +43,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (err: any) {
-    console.error('❌ API 처리 중 예외 발생:', err.message);
+  } catch (err) {
+    console.error('❌ API 처리 중 예외 발생:', (err as Error).message);
     return NextResponse.json({ success: false, error: '서버 오류 발생' });
   }
 }
