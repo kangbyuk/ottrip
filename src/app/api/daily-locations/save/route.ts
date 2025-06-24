@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { supabase } from '@/lib/supabase-client';
 
 export async function POST(req: Request) {
-  const cookieStore = cookies();
+  const cookieStore = cookies(); // ✅ 수정: await 제거
   const access_token = cookieStore.get('supabase-auth-token')?.value;
 
   if (!access_token) {
@@ -16,7 +16,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'Missing required fields' });
   }
 
-  // 사용자 정보 가져오기
   const {
     data: { user },
     error: userError,
@@ -26,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'User authentication failed' });
   }
 
-  const user_id = user.id; // uuid 형식
+  const user_id = user.id;
 
   const { error } = await supabase
     .from('daily_locations')

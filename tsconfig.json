@@ -2,13 +2,14 @@
   "compilerOptions": {
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["*"]
     },
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",  // 🔧 node로 설정
+    "moduleResolution": "node",
     "jsx": "preserve",
     "allowJs": true,
+    "allowSyntheticDefaultImports": true, // ✅ 추가
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -18,11 +19,11 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "skipLibCheck": true,
     "incremental": true,
-    "types": ["@clerk/nextjs"],  // 🔧 Clerk 타입 추가
+    "types": ["@clerk/nextjs"],
     "plugins": [{ "name": "next" }]
   },
   "include": [
-    "middleware.ts",           // ✅ 이 줄을 추가해야 middleware 인식함
+    "middleware.ts",
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
