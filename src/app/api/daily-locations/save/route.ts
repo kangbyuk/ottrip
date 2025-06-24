@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { supabase } from '@/lib/supabase-client';
 
 export async function POST(req: Request) {
-  const cookieStore = cookies(); // ✅ 수정: await 제거
+  const cookieStore = await cookies(); // ✅ await 붙임
   const access_token = cookieStore.get('supabase-auth-token')?.value;
 
   if (!access_token) {
