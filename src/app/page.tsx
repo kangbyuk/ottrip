@@ -1,4 +1,3 @@
-// ✅ 완벽하게 lint 에러 제거한 page.tsx
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -9,9 +8,10 @@ import WeekSelector from '@/components/WeekSelector';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Image from 'next/image';
+import ProfileSummary from '@/components/ProfileSummary';
 
 export default function Page() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
   const [schedules, setSchedules] = useState<ScheduleData[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,34 +79,32 @@ export default function Page() {
   }, []);
 
   const handleCellClick = (day: Date, hour: number) => {
-    const selectedCell = new Date(day);
-    selectedCell.setHours(hour, 0, 0, 0);
+    const start = new Date(day);
+    start.setHours(hour, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(start.getHours() + 1);
 
-    const endCell = new Date(selectedCell);
-    endCell.setHours(selectedCell.getHours() + 1);
-
-    const toISOStringLocal = (date: Date) => {
-      const tzOffset = date.getTimezoneOffset() * 60000;
-      return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+    const formatDate = (d: Date) => {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:00`;
     };
 
-    setDefaultStart(toISOStringLocal(selectedCell));
-    setDefaultEnd(toISOStringLocal(endCell));
     setSelectedSchedule(null);
+    setDefaultStart(formatDate(start));
+    setDefaultEnd(formatDate(end));
     setIsModalOpen(true);
   };
 
   const handleScheduleClick = (schedule: ScheduleData) => {
-    const start = typeof schedule?.start_time === 'string'
+    const start = typeof schedule.start_time === 'string'
       ? schedule.start_time
-      : new Date(schedule?.start_time).toISOString();
-    const end = typeof schedule?.end_time === 'string'
+      : new Date(schedule.start_time).toISOString();
+    const end = typeof schedule.end_time === 'string'
       ? schedule.end_time
-      : new Date(schedule?.end_time).toISOString();
+      : new Date(schedule.end_time).toISOString();
 
+    setSelectedSchedule(schedule);
     setDefaultStart(start);
     setDefaultEnd(end);
-    setSelectedSchedule(schedule);
     setIsModalOpen(true);
   };
 
@@ -133,34 +131,28 @@ export default function Page() {
     });
   };
 
-  if (!isSignedIn) {
-    return <div className="p-4">로그인이 필요합니다.</div>;
-  }
+  if (!isLoaded) return null;
+  if (!isSignedIn || !user) return <div className="p-4">로그인이 필요합니다.</div>;
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-2">
-        <Image
-          src="/logo.png"
-          alt="OTTRIP logo"
-          width={160}
-          height={80}
-          className="h-10 w-auto"
-        />
-        <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+      <div className="grid grid-cols-3 items-center mb-2">
+        <div className="justify-self-start">
+          <ProfileSummary />
+        </div>
+        <div className="justify-self-center">
+          <Image src="/logo.png" alt="OTTRIP logo" width={160} height={80} className="h-10 w-auto" />
+        </div>
+        <div className="justify-self-end">
+          <WeekSelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+        </div>
       </div>
 
-      <div
-        className="overflow-x-auto overflow-y-auto max-h-[75vh] mt-2 border"
-        ref={scrollContainerRef}
-      >
+      <div className="overflow-x-auto overflow-y-auto max-h-[75vh] mt-2 border" ref={scrollContainerRef}>
         <div className="grid grid-cols-8 gap-px min-w-[700px]">
           <div className="bg-gray-100 p-2 sticky top-0 z-10">시간</div>
           {weekDays.map((day) => (
-            <div
-              key={day.toISOString()}
-              className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10"
-            >
+            <div key={day.toISOString()} className="bg-gray-100 p-2 text-center font-semibold sticky top-0 z-10">
               <div>{format(day, 'MM/dd (E)', { locale: ko })}</div>
             </div>
           ))}
@@ -179,13 +171,13 @@ export default function Page() {
                     onClick={() => handleCellClick(day, hour)}
                     ref={isScrollTarget ? scrollTargetRef : undefined}
                   >
-                    {cellSchedules.map((sch) => (
+                    {cellSchedules.map((sch, idx) => (
                       <div
                         key={sch.id}
-                        className="bg-blue-200 rounded p-1 text-xs truncate"
+                        className="bg-blue-200 rounded p-1 text-xs truncate absolute left-0 right-2"
                         style={{
                           height: `${100 / cellSchedules.length}%`,
-                          marginBottom: '2px',
+                          top: `${(100 / cellSchedules.length) * idx}%`,
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -204,6 +196,7 @@ export default function Page() {
       </div>
 
       <ScheduleModal
+        key={isModalOpen ? `${defaultStart}-${defaultEnd}-${selectedSchedule?.id ?? 'new'}` : 'closed'}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         refresh={refreshSchedules}

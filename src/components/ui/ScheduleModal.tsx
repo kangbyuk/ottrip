@@ -43,15 +43,29 @@ const ScheduleModal: React.FC<Props> = ({
 }) => {
   const [startTime, setStartTime] = useState(defaultStart.slice(11, 16));
   const [endTime, setEndTime] = useState(defaultEnd.slice(11, 16));
-  const [title, setTitle] = useState(schedule?.title || '');
-  const [content, setContent] = useState(schedule?.content || '');
-  const [country, setCountry] = useState(schedule?.country || dailyLocation?.country || '');
-  const [city, setCity] = useState(schedule?.city || dailyLocation?.city || '');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [country, setCountry] = useState('');
+  const [city, setCity] = useState('');
 
   useEffect(() => {
     if (defaultStart) setStartTime(defaultStart.slice(11, 16));
     if (defaultEnd) setEndTime(defaultEnd.slice(11, 16));
   }, [defaultStart, defaultEnd]);
+
+  useEffect(() => {
+    if (schedule) {
+      setTitle(schedule.title || '');
+      setContent(schedule.content || '');
+      setCountry(schedule.country || dailyLocation?.country || '');
+      setCity(schedule.city || dailyLocation?.city || '');
+    } else {
+      setTitle('');
+      setContent('');
+      setCountry(dailyLocation?.country || '');
+      setCity(dailyLocation?.city || '');
+    }
+  }, [schedule, dailyLocation]);
 
   const handleSave = async () => {
     const payload = {
